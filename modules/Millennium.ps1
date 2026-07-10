@@ -49,13 +49,22 @@ function Install-Millennium {
     }
 
     $installerPath = Get-MillenniumInstallerPath
-    Write-Step 'Launching the Millennium installer -- follow the on-screen wizard...'
-    Write-Info2 'This window will resume automatically once the installer window is closed.'
-    Write-Info2 'Note: the Millennium installer starts Steam automatically when it finishes.'
+    Write-Step 'Launching the Millennium installer window...'
+    Write-Warn2 'IMPORTANT: complete the wizard, then CLOSE the installer window to continue here.'
+    Write-Warn2 'The installer opens Steam when it finishes -- that is normal. You still need to'
+    Write-Warn2 'close the INSTALLER window (it may be hidden behind Steam) for this script to resume.'
     Start-Process -FilePath $installerPath -Wait
     Remove-Item -Path $installerPath -Force -ErrorAction SilentlyContinue
 
-    if (Test-MillenniumInstalled) {
+    # The installer may still be flushing files for a moment after its window
+    # closes; give detection a few tries before deciding.
+    $detected = $false
+    for ($i = 0; $i -lt 6; $i++) {
+        if (Test-MillenniumInstalled) { $detected = $true; break }
+        Start-Sleep -Milliseconds 500
+    }
+
+    if ($detected) {
         Write-Ok 'Millennium installed successfully.'
     } else {
         Write-Warn2 'Could not confirm Millennium files on disk -- if the wizard reported success, this is likely a detection quirk, not a real failure.'

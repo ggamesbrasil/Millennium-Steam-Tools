@@ -144,6 +144,8 @@ Everything is driven by a small tool registry in `modules/Common.ps1` (`Get-Tool
 
 - **"Steam installation not found in the registry"** — make sure Steam has been run at least once (its registry keys are created on first launch).
 - **A step fails partway through** — check the log file (see above); most steps are safe to just re-run.
+- **SteamTools** — the official `steam.run` endpoint is sometimes down and returns an error page instead of the installer script. When that happens the SteamTools step automatically falls back to the same GitHub package the official LuaTools installer uses, so the install still succeeds.
+- **The Millennium step seems to "hang" after Steam opens** — Millennium's installer is a GUI wizard with no silent mode, and it opens Steam when it finishes. The script only resumes after you close the **installer window itself**, which may be hidden behind the Steam window. Close it to continue.
 - **SteamTools/LuaTools install fails to download** — this is usually the installer's own upstream server being blocked by your ISP/network; see the `.gg/luatools` Discord linked in LuaTools' own error screen for known workarounds.
 
 ## Credits
