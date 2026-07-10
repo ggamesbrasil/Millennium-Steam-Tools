@@ -24,8 +24,9 @@ function Test-MillenniumInstalled {
 function Get-MillenniumInstallerPath {
     $dest = Join-Path $env:TEMP 'MillenniumInstaller-Windows.exe'
     Write-Step 'Downloading the official Millennium installer...'
-    Invoke-WebRequest -Uri $Script:MillenniumInstallerUrl -OutFile $dest -UseBasicParsing -TimeoutSec 60
-    if (-not (Test-Path $dest)) { throw 'Could not download MillenniumInstaller-Windows.exe.' }
+    if (-not (Invoke-Download -Url $Script:MillenniumInstallerUrl -OutFile $dest -TimeoutSec 120)) {
+        throw 'Could not download MillenniumInstaller-Windows.exe.'
+    }
     return $dest
 }
 

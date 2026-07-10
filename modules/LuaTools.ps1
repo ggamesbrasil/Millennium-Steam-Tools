@@ -127,12 +127,9 @@ function Install-LuaToolsPlugin {
 
     $zipPath = Join-Path $env:TEMP "$($Script:LuaToolsPluginName).zip"
     Write-Step "Downloading the LuaTools plugin..."
-    try {
-        Invoke-WebRequest -Uri $Script:LuaToolsPluginDownloadUrl -OutFile $zipPath -UseBasicParsing -TimeoutSec 60
-    } catch {
-        throw "Failed to download the LuaTools plugin: $($_.Exception.Message)"
+    if (-not (Invoke-Download -Url $Script:LuaToolsPluginDownloadUrl -OutFile $zipPath -TimeoutSec 120)) {
+        throw 'Failed to download the LuaTools plugin.'
     }
-    if (-not (Test-Path $zipPath)) { throw 'Failed to download the LuaTools plugin (file missing after download).' }
 
     Write-Step 'Extracting the plugin...'
     try {

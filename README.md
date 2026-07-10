@@ -5,7 +5,7 @@ A single, friendly PowerShell installer for three community Steam add-ons:
 | Tool | What it does | Official source |
 |---|---|---|
 | **[Millennium](https://docs.steambrew.app/users/)** | Steam client theming & plugin framework | [SteamClientHomebrew/Installer](https://github.com/SteamClientHomebrew/Installer) |
-| **[SteamTools](https://steamtools.net/)** | DLC / manifest unlocker | `irm steam.run \| iex` |
+| **[SteamTools](https://steamtools.net/)** | DLC / manifest unlocker | Official `steamtools.net` setup (silent install) |
 | **[LuaTools](https://wiki.lua.tools/docs/luatools/steam-plugin/get-started)** | Millennium plugin to add/remove games and apply compatibility fixes from Steam store pages | `irm https://luatools.vercel.app/install-plugin.ps1 \| iex` |
 
 You get full control: install each tool on its own, install everything in one go, or uninstall anything you no longer want — nothing runs without your confirmation.
@@ -104,9 +104,10 @@ This means you can safely re-run `Install LuaTools Plugin Only` to update just t
 Open the uninstall menu with `.\uninstall.ps1` (or option `6` in the main menu):
 
 - **Millennium** — relaunches the official Millennium installer, which has its own built-in removal option in the wizard.
-- **SteamTools** and **LuaTools plugin** — neither ships an official uninstaller. Removal is **best-effort**: this project deletes the specific files/folders it knows each tool creates, but only after backing them up first.
+- **SteamTools** — runs the official uninstaller that SteamTools' own setup registered in Windows (`Uninstall.exe /S`, silent), located automatically from the Windows uninstall registry. This is a clean, complete removal.
+- **LuaTools plugin** — has no official uninstaller, so removal is **best-effort**: this project deletes the plugin folder and disables it in `config.json`, after backing it up first.
 
-Every uninstall backs up what it's about to touch to:
+The LuaTools plugin uninstall backs up what it's about to touch to:
 
 ```
 %TEMP%\MillenniumSteamTools\backups\<Tool>-<timestamp>\
@@ -144,7 +145,7 @@ Everything is driven by a small tool registry in `modules/Common.ps1` (`Get-Tool
 
 - **"Steam installation not found in the registry"** — make sure Steam has been run at least once (its registry keys are created on first launch).
 - **A step fails partway through** — check the log file (see above); most steps are safe to just re-run.
-- **SteamTools** — the official `steam.run` endpoint is sometimes down and returns an error page instead of the installer script. When that happens the SteamTools step automatically falls back to the same GitHub package the official LuaTools installer uses, so the install still succeeds.
+- **SteamTools** — installed from the official `steamtools.net` setup (an NSIS installer), run silently. The latest version is discovered automatically by reading the download link off the site, so you don't have to track versions; a known-good link is used as a fallback. `steamtools.net` is behind Cloudflare, which blocks PowerShell's web client, so downloads use the bundled Windows `curl.exe` instead.
 - **The Millennium step seems to "hang" after Steam opens** — Millennium's installer is a GUI wizard with no silent mode, and it opens Steam when it finishes. The script only resumes after you close the **installer window itself**, which may be hidden behind the Steam window. Close it to continue.
 - **SteamTools/LuaTools install fails to download** — this is usually the installer's own upstream server being blocked by your ISP/network; see the `.gg/luatools` Discord linked in LuaTools' own error screen for known workarounds.
 

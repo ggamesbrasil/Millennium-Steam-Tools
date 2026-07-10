@@ -196,6 +196,60 @@ function Request-Elevation {
 }
 
 # ---------------------------------------------------------------------------
+# Networking / downloads
+#
+# Some hosts (notably steamtools.net, behind Cloudflare) reject PowerShell's
+# Invoke-WebRequest with HTTP 403 -- the .NET HTTP stack gets fingerprinted
+# as a bot. Native curl.exe (shipped with Windows 10 1803+ / Windows 11) is
+# not blocked, so we try it first and fall back to Invoke-WebRequest for
+# hosts that are fine with it (e.g. GitHub).
+# ---------------------------------------------------------------------------
+$Script:BrowserUserAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
+
+function Get-CurlPath {
+    $curl = Join-Path $env:SystemRoot 'System32\curl.exe'
+    if (Test-Path $curl) { return $curl }
+    $cmd = Get-Command curl.exe -ErrorAction SilentlyContinue
+    if ($cmd) { return $cmd.Source }
+    return $null
+}
+
+function Invoke-HttpText {
+    # Fetch a URL as text (used for scraping). Returns $null on failure.
+    param([string]$Url, [int]$TimeoutSec = 30)
+
+    $curl = Get-CurlPath
+    if ($curl) {
+        $out = & $curl -sL -A $Script:BrowserUserAgent --max-time $TimeoutSec $Url 2>$null
+        if ($LASTEXITCODE -eq 0 -and $out) { return ($out -join "`n") }
+    }
+    try {
+        return [string](Invoke-RestMethod -Uri $Url -TimeoutSec $TimeoutSec -UserAgent $Script:BrowserUserAgent)
+    } catch {
+        return $null
+    }
+}
+
+function Invoke-Download {
+    # Download a URL to a file. Returns $true if a non-empty file was written.
+    param([string]$Url, [string]$OutFile, [int]$TimeoutSec = 120)
+
+    if (Test-Path $OutFile) { Remove-Item $OutFile -Force -ErrorAction SilentlyContinue }
+
+    $curl = Get-CurlPath
+    if ($curl) {
+        & $curl -sL -A $Script:BrowserUserAgent --max-time $TimeoutSec -o $OutFile $Url 2>$null
+        if ((Test-Path $OutFile) -and ((Get-Item $OutFile).Length -gt 0)) { return $true }
+    }
+    try {
+        Invoke-WebRequest -Uri $Url -OutFile $OutFile -UseBasicParsing -TimeoutSec $TimeoutSec -UserAgent $Script:BrowserUserAgent
+    } catch {
+        return $false
+    }
+    return (Test-Path $OutFile) -and ((Get-Item $OutFile).Length -gt 0)
+}
+
+# ---------------------------------------------------------------------------
 # Steam detection
 # ---------------------------------------------------------------------------
 function Get-SteamPath {
@@ -376,7 +430,7 @@ function Get-ToolRegistry {
         [ordered]@{
             Key         = 'SteamTools'
             Name        = 'SteamTools'
-            Description = 'DLC/manifest unlocker (official one-liner: irm steam.run)'
+            Description = 'DLC/manifest unlocker (official steamtools.net setup)'
             Test        = 'Test-SteamToolsInstalled'
             Install     = 'Install-SteamTools'
             Uninstall   = 'Uninstall-SteamTools'
