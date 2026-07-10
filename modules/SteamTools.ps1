@@ -24,12 +24,18 @@ function Test-SteamToolsInstalled {
 }
 
 function Install-SteamTools {
+    param([switch]$Clean)
+
     $steamPath = Get-SteamPath
     if (-not $steamPath) { throw 'Steam installation not found in the registry. Is Steam installed?' }
 
     if (Test-SteamToolsInstalled) {
-        Write-Ok 'SteamTools is already installed.'
-        if (-not (Confirm-Step -Message 'Run the installer anyway (repair/update)?')) { return }
+        if ($Clean) {
+            Write-Info2 'SteamTools already installed -- clean reinstall requested, running the installer again.'
+        } else {
+            Write-Ok 'SteamTools is already installed.'
+            if (-not (Confirm-Step -Message 'Run the installer anyway (repair/update)?')) { return }
+        }
     }
 
     if (Test-SteamRunning) {

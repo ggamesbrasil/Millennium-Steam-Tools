@@ -30,12 +30,18 @@ function Get-MillenniumInstallerPath {
 }
 
 function Install-Millennium {
+    param([switch]$Clean)
+
     $steamPath = Get-SteamPath
     if (-not $steamPath) { throw 'Steam installation not found in the registry. Is Steam installed?' }
 
     if (Test-MillenniumInstalled) {
-        Write-Ok 'Millennium is already installed.'
-        if (-not (Confirm-Step -Message 'Run the installer anyway (repair/update)?')) { return }
+        if ($Clean) {
+            Write-Info2 'Millennium already installed -- clean reinstall requested, running the installer again.'
+        } else {
+            Write-Ok 'Millennium is already installed.'
+            if (-not (Confirm-Step -Message 'Run the installer anyway (repair/update)?')) { return }
+        }
     }
 
     if (Test-SteamRunning) {

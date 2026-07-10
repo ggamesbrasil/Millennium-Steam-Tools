@@ -92,36 +92,41 @@ if (-not $NoElevate) {
 Write-Banner
 
 # ---------------------------------------------------------------------------
-# Install All -- Millennium, then SteamTools, then the plugin (not the
-# official LuaTools one-liner, to avoid reinstalling SteamTools twice).
+# Install All -- CLEAN reinstall of everything from scratch: Millennium, then
+# SteamTools, then the plugin (not the official LuaTools one-liner, to avoid
+# reinstalling SteamTools twice).
+#
+# "Clean" means every tool is reinstalled even if it's already present -- each
+# step runs its installer again and the LuaTools plugin folder is wiped and
+# redeployed fresh, as if starting from zero.
 #
 # Sequential gating: each step must verify as installed before the next one
 # runs. If any step fails or can't be confirmed, the chain stops immediately
 # so we never try to install the LuaTools plugin onto a missing Millennium.
 # ---------------------------------------------------------------------------
 function Invoke-InstallAll {
-    Write-SectionHeader 'Install All'
-    Write-Info2 'Running: Millennium -> SteamTools -> LuaTools Plugin (no redundant SteamTools reinstall).'
-    Write-Info2 'Each step must succeed before the next one starts.'
+    Write-SectionHeader 'Install All (clean reinstall)'
+    Write-Info2 'Reinstalling everything from scratch: Millennium -> SteamTools -> LuaTools Plugin.'
+    Write-Info2 'All three are reinstalled even if already present. Each step must succeed before the next starts.'
 
-    if (-not (Invoke-GatedStep -Label 'Step 1/3 -- Millennium' -Action { Install-Millennium } -VerifyFunction 'Test-MillenniumInstalled')) {
+    if (-not (Invoke-GatedStep -Label 'Step 1/3 -- Millennium' -Action { Install-Millennium -Clean } -VerifyFunction 'Test-MillenniumInstalled')) {
         Write-Rule
         Write-Err2 'Install All stopped at step 1 (Millennium). Fix the issue above and try again.'
         return
     }
-    if (-not (Invoke-GatedStep -Label 'Step 2/3 -- SteamTools' -Action { Install-SteamTools } -VerifyFunction 'Test-SteamToolsInstalled')) {
+    if (-not (Invoke-GatedStep -Label 'Step 2/3 -- SteamTools' -Action { Install-SteamTools -Clean } -VerifyFunction 'Test-SteamToolsInstalled')) {
         Write-Rule
         Write-Err2 'Install All stopped at step 2 (SteamTools). Millennium is installed; re-run to continue.'
         return
     }
-    if (-not (Invoke-GatedStep -Label 'Step 3/3 -- LuaTools Plugin' -Action { Install-LuaToolsPlugin } -VerifyFunction 'Test-LuaToolsInstalled')) {
+    if (-not (Invoke-GatedStep -Label 'Step 3/3 -- LuaTools Plugin' -Action { Install-LuaToolsPlugin -Clean } -VerifyFunction 'Test-LuaToolsInstalled')) {
         Write-Rule
         Write-Err2 'Install All stopped at step 3 (LuaTools plugin). Millennium + SteamTools are installed.'
         return
     }
 
     Write-Rule
-    Write-Ok 'Install All finished -- Millennium, SteamTools and the LuaTools plugin are all installed.'
+    Write-Ok 'Install All finished -- Millennium, SteamTools and the LuaTools plugin were all reinstalled cleanly.'
 }
 
 # ---------------------------------------------------------------------------
@@ -161,7 +166,7 @@ do {
         @{ Number = 2; Label = 'Install SteamTools'; Status = (Get-ToolStatusLabel $tools[1]) }
         @{ Number = 3; Label = 'Install LuaTools (Official, full)'; Status = (Get-ToolStatusLabel $tools[2]); SubLabel = 'Also installs/updates SteamTools + Millennium' }
         @{ Number = 4; Label = 'Install LuaTools Plugin Only'; Status = (Get-ToolStatusLabel $tools[3]); SubLabel = 'Requires Millennium + SteamTools already installed' }
-        @{ Number = 5; Label = 'Install All'; Status = $null; SubLabel = 'Millennium -> SteamTools -> LuaTools Plugin' }
+        @{ Number = 5; Label = 'Install All (clean reinstall)'; Status = $null; SubLabel = 'Reinstall everything from scratch, even if already installed' }
         @{ Number = 6; Label = 'Uninstall menu'; Status = $null }
         @{ Number = 0; Label = 'Exit'; Status = $null }
     )

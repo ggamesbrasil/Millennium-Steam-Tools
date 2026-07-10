@@ -36,17 +36,19 @@ Clone or download this repository, then from the project folder:
 This opens the interactive menu:
 
 ```
- [1] Install Millennium                      ✔ Installed
- [2] Install SteamTools                      ✖ Not installed
- [3] Install LuaTools (Official, full)       ✖ Not installed
+ [1] Install Millennium                      [Installed]
+ [2] Install SteamTools                      [Not installed]
+ [3] Install LuaTools (Official, full)       [Not installed]
       Also installs/updates SteamTools + Millennium
- [4] Install LuaTools Plugin Only            ✖ Not installed
+ [4] Install LuaTools Plugin Only            [Not installed]
       Requires Millennium + SteamTools already installed
- [5] Install All
-      Millennium -> SteamTools -> LuaTools Plugin
+ [5] Install All (clean reinstall)
+      Reinstall everything from scratch, even if already installed
  [6] Uninstall menu
  [0] Exit
 ```
+
+The interface is plain ASCII (no Unicode icons or emoji) so it renders correctly in every console font, including the classic Windows PowerShell console.
 
 If Windows blocks the script from running, allow it for the current session first:
 
@@ -64,7 +66,7 @@ Every action is also available as a switch, for scripted / unattended installs:
 .\install.ps1 -SteamTools              # SteamTools only
 .\install.ps1 -LuaTools                # Official LuaTools one-liner (installs all 3)
 .\install.ps1 -LuaToolsPluginOnly      # Just the plugin (Millennium + SteamTools must already exist)
-.\install.ps1 -All                     # Millennium -> SteamTools -> LuaTools Plugin
+.\install.ps1 -All                     # Clean reinstall of all 3 (Millennium -> SteamTools -> LuaTools Plugin)
 .\install.ps1 -All -Yes                # Same, unattended (auto-confirm every prompt)
 .\install.ps1 -Uninstall               # Jump straight to the uninstall menu
 .\install.ps1 -All -NoElevate          # Don't try to relaunch as Administrator
@@ -72,13 +74,15 @@ Every action is also available as a switch, for scripted / unattended installs:
 
 `uninstall.ps1` takes the matching switches: `-Millennium`, `-SteamTools`, `-LuaTools`, `-All`, `-Yes`, `-NoElevate`.
 
-## How "Install All" works
+## How "Install All (clean reinstall)" works
 
-`Install All` does **not** just call the official LuaTools one-liner (which would silently reinstall SteamTools and Millennium every time, even if you already have them). Instead it runs three independent, visible steps:
+`Install All` performs a **clean reinstall of everything from scratch** — every tool is reinstalled even if it's already present, as if you were setting up a fresh machine. It runs three independent, visible steps:
 
-1. Install Millennium (official installer)
-2. Install SteamTools (official one-liner)
-3. Install **just** the LuaTools plugin (see below) — since Millennium and SteamTools are already in place by this point, nothing gets reinstalled redundantly.
+1. Reinstall Millennium (runs the official installer again)
+2. Reinstall SteamTools (runs the official one-liner again)
+3. Reinstall the LuaTools plugin — the existing plugin folder is **wiped and redeployed fresh** (not merged over), so you end up with a pristine copy.
+
+It deliberately does **not** just call the official LuaTools one-liner (which would reinstall SteamTools and Millennium too), so SteamTools isn't reinstalled twice in the same run.
 
 **Sequential gating:** each step must report a positive status before the next one starts. After every step the script re-checks the tool's own detection (e.g. after step 1 it confirms Millennium's files are actually on disk). If a step fails or can't be confirmed, the chain stops immediately with a clear message — so it never tries to drop the LuaTools plugin onto a half-installed Millennium.
 

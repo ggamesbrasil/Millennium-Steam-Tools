@@ -86,6 +86,8 @@ function Install-LuaTools {
 # other two tools -- only prerequisite detection)
 # ---------------------------------------------------------------------------
 function Install-LuaToolsPlugin {
+    param([switch]$Clean)
+
     $steamPath = Get-SteamPath
     if (-not $steamPath) { throw 'Steam installation not found in the registry. Is Steam installed?' }
 
@@ -117,8 +119,16 @@ function Install-LuaToolsPlugin {
     $existing = Find-LuaToolsPluginDir -SteamPath $steamPath
     $targetDir = Join-Path $pluginsDir $Script:LuaToolsPluginName
     if ($existing) {
-        Write-Step 'Existing LuaTools plugin found -- updating in place.'
-        $targetDir = $existing
+        if ($Clean) {
+            # Clean reinstall: wipe the existing plugin folder so extraction
+            # produces a pristine copy instead of merging over old files.
+            Write-Step 'Existing LuaTools plugin found -- removing it for a clean reinstall.'
+            Remove-Item -Path $existing -Recurse -Force -ErrorAction SilentlyContinue
+            $targetDir = Join-Path $pluginsDir $Script:LuaToolsPluginName
+        } else {
+            Write-Step 'Existing LuaTools plugin found -- updating in place.'
+            $targetDir = $existing
+        }
     }
 
     $zipPath = Join-Path $env:TEMP "$($Script:LuaToolsPluginName).zip"

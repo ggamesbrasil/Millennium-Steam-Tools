@@ -75,10 +75,12 @@ function Write-Status {
         [string]$Type,
         [string]$Message
     )
-    $icons = @{ Step = '➜'; Ok = '✔'; Warn = '⚠'; Err = '✖'; Info = 'ℹ' }
+    # ASCII-only tags -- some console fonts don't render Unicode icons/emoji,
+    # so they'd show as empty boxes. Plain tags render everywhere.
+    $tags = @{ Step = '[>]'; Ok = '[OK]'; Warn = '[!]'; Err = '[X]'; Info = '[i]' }
     $colors = @{ Step = 'White'; Ok = $Palette.Ok; Warn = $Palette.Warn; Err = $Palette.Err; Info = $Palette.Info }
 
-    Write-Host " $($icons[$Type])  " -ForegroundColor $colors[$Type] -NoNewline
+    Write-Host (" {0,-4} " -f $tags[$Type]) -ForegroundColor $colors[$Type] -NoNewline
     Write-Host $Message -ForegroundColor $colors[$Type]
 
     $levelMap = @{ Step = 'STEP'; Ok = 'OK'; Warn = 'WARN'; Err = 'ERR'; Info = 'INFO' }
@@ -104,22 +106,24 @@ function Write-Banner {
     $title = 'MILLENNIUM STEAM TOOLS'
     $subtitle = 'Millennium + SteamTools + LuaTools -- unified installer'
 
-    Write-Host ('╔' + ('═' * ($width - 2)) + '╗') -ForegroundColor $Palette.Border
+    $border = '+' + ('=' * ($width - 2)) + '+'
+    Write-Host $border -ForegroundColor $Palette.Border
+
     $pad = [Math]::Max(0, [int](($width - 2 - $title.Length) / 2))
-    Write-Host '║' -ForegroundColor $Palette.Border -NoNewline
+    Write-Host '|' -ForegroundColor $Palette.Border -NoNewline
     Write-Host (' ' * $pad) -NoNewline
     Write-Host $title -ForegroundColor $Palette.Title -NoNewline
     Write-Host (' ' * ($width - 2 - $pad - $title.Length)) -NoNewline
-    Write-Host '║' -ForegroundColor $Palette.Border
+    Write-Host '|' -ForegroundColor $Palette.Border
 
     $pad2 = [Math]::Max(0, [int](($width - 2 - $subtitle.Length) / 2))
-    Write-Host '║' -ForegroundColor $Palette.Border -NoNewline
+    Write-Host '|' -ForegroundColor $Palette.Border -NoNewline
     Write-Host (' ' * $pad2) -NoNewline
     Write-Host $subtitle -ForegroundColor $Palette.Muted -NoNewline
     Write-Host (' ' * ($width - 2 - $pad2 - $subtitle.Length)) -NoNewline
-    Write-Host '║' -ForegroundColor $Palette.Border
+    Write-Host '|' -ForegroundColor $Palette.Border
 
-    Write-Host ('╚' + ('═' * ($width - 2)) + '╝') -ForegroundColor $Palette.Border
+    Write-Host $border -ForegroundColor $Palette.Border
     Write-Host ''
 }
 
@@ -127,12 +131,12 @@ function Write-SectionHeader {
     param([string]$Title)
     $width = Get-ConsoleWidth
     Write-Host ''
-    Write-Host (" $Title ").PadRight($width, '─') -ForegroundColor $Palette.Accent
+    Write-Host ("-- $Title ").PadRight($width, '-') -ForegroundColor $Palette.Accent
     Write-ToLog -Line "---- $Title ----" -Level INFO
 }
 
 function Write-Rule {
-    Write-Host ('─' * (Get-ConsoleWidth)) -ForegroundColor $Palette.Muted
+    Write-Host ('-' * (Get-ConsoleWidth)) -ForegroundColor $Palette.Muted
 }
 
 # ---------------------------------------------------------------------------
@@ -370,8 +374,8 @@ function Test-ToolPrereqs {
 function Get-ToolStatusLabel {
     param([hashtable]$Tool)
     $installed = & (Get-Item "function:$($Tool.Test)")
-    if ($installed) { return '✔ Installed' }
-    return '✖ Not installed'
+    if ($installed) { return '[Installed]' }
+    return '[Not installed]'
 }
 
 # ---------------------------------------------------------------------------
@@ -388,7 +392,7 @@ function Show-Menu {
         Write-Host " [$($item.Number)] " -ForegroundColor $Palette.Accent -NoNewline
         Write-Host $item.Label.PadRight(40) -ForegroundColor $Palette.Title -NoNewline
         if ($item.Status) {
-            $color = if ($item.Status -match '✔') { $Palette.Ok } elseif ($item.Status -match '✖') { $Palette.Err } else { $Palette.Muted }
+            $color = if ($item.Status -match 'Not') { $Palette.Err } elseif ($item.Status -match 'Installed') { $Palette.Ok } else { $Palette.Muted }
             Write-Host $item.Status -ForegroundColor $color
         } else {
             Write-Host ''
