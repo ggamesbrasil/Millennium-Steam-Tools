@@ -114,11 +114,18 @@ function Invoke-InstallAll {
         Write-Err2 'Install All stopped at step 1 (Millennium). Fix the issue above and try again.'
         return
     }
+    # Millennium's installer launches Steam when it finishes -- wait for that
+    # delayed launch and close it before touching Steam files again.
+    Assert-SteamClosed -SettleSeconds 10 -Force | Out-Null
+
     if (-not (Invoke-GatedStep -Label 'Step 2/3 -- SteamTools' -Action { Install-SteamTools -Clean } -VerifyFunction 'Test-SteamToolsInstalled')) {
         Write-Rule
         Write-Err2 'Install All stopped at step 2 (SteamTools). Millennium is installed; re-run to continue.'
         return
     }
+    # The SteamTools installer can also start Steam -- settle and close again.
+    Assert-SteamClosed -SettleSeconds 8 -Force | Out-Null
+
     if (-not (Invoke-GatedStep -Label 'Step 3/3 -- LuaTools Plugin' -Action { Install-LuaToolsPlugin -Clean } -VerifyFunction 'Test-LuaToolsInstalled')) {
         Write-Rule
         Write-Err2 'Install All stopped at step 3 (LuaTools plugin). Millennium + SteamTools are installed.'

@@ -150,7 +150,8 @@ function Confirm-Step {
     if ($Global:AssumeYes) { return $true }
 
     $suffix = if ($DefaultYes) { '[Y/n]' } else { '[y/N]' }
-    Write-Host " ?  $Message $suffix " -ForegroundColor $Palette.Accent -NoNewline
+    Write-Host (" {0,-4} " -f '[?]') -ForegroundColor $Palette.Accent -NoNewline
+    Write-Host "$Message $suffix " -ForegroundColor $Palette.Accent -NoNewline
     $answer = Read-Host
     if ([string]::IsNullOrWhiteSpace($answer)) { return $DefaultYes.IsPresent }
     return $answer.Trim().ToLower() -in @('y', 'yes', 's', 'sim')
@@ -223,6 +224,49 @@ function Stop-SteamProcesses {
         Get-Process -Name 'steam', 'steamwebhelper' -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
         Start-Sleep -Milliseconds 400
     }
+}
+
+# ---------------------------------------------------------------------------
+# Ensure Steam is closed before a step that patches Steam files.
+#
+# Several installers (notably Millennium's, and the official SteamTools /
+# LuaTools scripts) LAUNCH Steam when they finish. That launch is async, so
+# Steam can appear a couple of seconds *after* the previous step returned.
+# When -SettleSeconds is given, this watches for that delayed launch and
+# closes Steam as soon as it shows up, so the next step starts clean.
+#
+# Returns $true if Steam ended up closed, $false if the user declined.
+# ---------------------------------------------------------------------------
+function Assert-SteamClosed {
+    param(
+        [int]$SettleSeconds = 0,   # watch this long for a delayed auto-launch
+        [switch]$Force             # close without asking (Install All / clean / -Yes)
+    )
+
+    if ($SettleSeconds -gt 0) {
+        Write-Step "Watching for Steam to auto-start (up to ${SettleSeconds}s) so it can be closed..."
+        $deadline = (Get-Date).AddSeconds($SettleSeconds)
+        while ((Get-Date) -lt $deadline -and -not (Test-SteamRunning)) {
+            Start-Sleep -Milliseconds 500
+        }
+    }
+
+    if (-not (Test-SteamRunning)) { return $true }
+
+    if ($Force -or $Global:AssumeYes) {
+        Write-Step 'Steam is running -- closing it for this step.'
+        Stop-SteamProcesses
+        Write-Ok 'Steam closed.'
+        return $true
+    }
+
+    Write-Warn2 'Steam is running and must be closed for this step.'
+    if (Confirm-Step -Message 'Close Steam now?' -DefaultYes) {
+        Stop-SteamProcesses
+        Write-Ok 'Steam closed.'
+        return $true
+    }
+    return $false
 }
 
 function Start-SteamProcess {

@@ -101,14 +101,8 @@ function Install-LuaToolsPlugin {
         return
     }
 
-    if (Test-SteamRunning) {
-        Write-Warn2 'Steam is running and must be closed before installing the plugin.'
-        if (Confirm-Step -Message 'Close Steam now?' -DefaultYes) {
-            Stop-SteamProcesses
-            Write-Ok 'Steam closed.'
-        } else {
-            throw 'Steam must be closed to continue.'
-        }
+    if (-not (Assert-SteamClosed -Force:$Clean)) {
+        throw 'Steam must be closed to continue.'
     }
 
     $millDir = Join-Path $steamPath 'millennium'

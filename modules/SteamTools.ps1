@@ -38,9 +38,8 @@ function Install-SteamTools {
         }
     }
 
-    if (Test-SteamRunning) {
-        Write-Warn2 'Steam is running. The official installer will close it automatically if needed.'
-        if (-not (Confirm-Step -Message 'Continue?' -DefaultYes)) { throw 'Cancelled by user.' }
+    if (-not (Assert-SteamClosed -Force:$Clean)) {
+        throw 'Steam must be closed to continue.'
     }
 
     Write-Step "Running the official SteamTools installer ($Script:SteamToolsInstallUrl)..."

@@ -44,19 +44,14 @@ function Install-Millennium {
         }
     }
 
-    if (Test-SteamRunning) {
-        Write-Warn2 'Steam is running and must be closed before installing.'
-        if (Confirm-Step -Message 'Close Steam now?' -DefaultYes) {
-            Stop-SteamProcesses
-            Write-Ok 'Steam closed.'
-        } else {
-            throw 'Steam must be closed to continue.'
-        }
+    if (-not (Assert-SteamClosed -Force:$Clean)) {
+        throw 'Steam must be closed to continue.'
     }
 
     $installerPath = Get-MillenniumInstallerPath
     Write-Step 'Launching the Millennium installer -- follow the on-screen wizard...'
     Write-Info2 'This window will resume automatically once the installer window is closed.'
+    Write-Info2 'Note: the Millennium installer starts Steam automatically when it finishes.'
     Start-Process -FilePath $installerPath -Wait
     Remove-Item -Path $installerPath -Force -ErrorAction SilentlyContinue
 
